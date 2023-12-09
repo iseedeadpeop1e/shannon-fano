@@ -33,7 +33,6 @@ async def get_symbols_codes(symbols: List[Symbol], start: int, end: int):
         mid += 1
         left_sum += symbols[mid].chance
         right_sum -= symbols[mid].chance
-    print('есть контакт')
     # Присваиваем код для символов каждой группы
     for i in range(start, mid+1):
         symbols[i].code += "1"
