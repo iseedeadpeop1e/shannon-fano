@@ -16,28 +16,24 @@ class Symbol:
 async def get_sorted_symbols(string: str) -> List[Symbol]:
     length = len(string)
     counts = Counter(string)
-    symbols = [Symbol(value=char, chance=frq) for char, frq in counts.items()]
-    symbols.sort(key=lambda char: char.frequency, reverse=True)
-    print(symbols)
-    await get_codes(symbols=symbols, start=0, end=len(symbols) - 1)
-    print(symbols)
+    symbols = [Symbol(value=char, chance=frq/length) for char, frq in counts.items()]
+    symbols.sort(key=lambda char: char.chance, reverse=True)
     return symbols
 
 
-async def get_codes(symbols: List[Symbol], start: int, end: int):
+async def get_symbols_codes(symbols: List[Symbol], start: int, end: int):
     if start >= end:
         return
 
-    # Вычисляем сумму частот символов
-    total_frequency = sum([symbol.frequency for symbol in symbols[start:end+1]])
-
-    # Делим символы на две группы, чтобы сумма частот групп была примерно равна
+    # Делим символы на две группы, чтобы сумма вероятностей групп была примерно равна
     mid = start
-    current_sum = symbols[start].frequency
-    while current_sum < total_frequency // 2:
+    left_sum = symbols[start].chance
+    right_sum = sum(s.chance for s in symbols[start+1:end+1])
+    while left_sum < right_sum:
         mid += 1
-        current_sum += symbols[mid].frequency
-
+        left_sum += symbols[mid].chance
+        right_sum -= symbols[mid].chance
+    print('есть контакт')
     # Присваиваем код для символов каждой группы
     for i in range(start, mid+1):
         symbols[i].code += "1"
@@ -46,15 +42,16 @@ async def get_codes(symbols: List[Symbol], start: int, end: int):
 
     # Рекурсивно делим символы в каждой группе
     await asyncio.gather(
-        get_codes(symbols, start, mid),
-        get_codes(symbols, mid + 1, end)
+        get_symbols_codes(symbols, start, mid),
+        get_symbols_codes(symbols, mid + 1, end)
     )
 
 
-
-
-st = 'A'* 50 + 'B' * 39 + 'C' * 18 + 'D' * 49 + 'E' * 35 + 'F' * 24
-print(st)
-asyncio.run(get_sorted_symbols(st))
-
+async def encode(string: str):
+    symbols_list = await get_sorted_symbols(string)
+    await get_symbols_codes(symbols=symbols_list, start=0, end=len(symbols_list) - 1)
+    result = {}
+    for s in symbols_list:
+        result[s.value] = s.code
+    return result
 
